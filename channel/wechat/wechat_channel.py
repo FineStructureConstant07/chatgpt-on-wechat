@@ -15,6 +15,7 @@ from config import conf
 import requests
 import io
 
+MAX_GROUP_MSGS = 1000
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
 
@@ -33,6 +34,36 @@ def handler_group_msg(msg):
 @itchat.msg_register(VOICE)
 def handler_single_voice(msg):
     WechatChannel().handle_voice(msg)
+    return None
+
+@itchat.msg_register(CARD)
+def handler_single_card(msg):
+    WechatChannel().handle_card(msg)
+    return None
+
+@itchat.msg_register(NOTE)
+def handler_single_note(msg):
+    WechatChannel().handle_note(msg)
+    return None
+
+@itchat.msg_register(SHARING)
+def handler_single_sharing(msg):
+    WechatChannel().handle_sharing(msg)
+    return None
+
+@itchat.msg_register(PICTURE)
+def handler_single_picture(msg):
+    WechatChannel().handle_picture(msg)
+    return None
+
+@itchat.msg_register(RECORDING)
+def handler_single_recording(msg):
+    WechatChannel().handle_recording(msg)
+    return None
+
+@itchat.msg_register(ATTACHMENT)
+def handler_single_attachment(msg):
+    WechatChannel().handle_attachment(msg)
     return None
 
 
@@ -218,4 +249,22 @@ class WechatChannel(Channel):
             if content.find(ky) != -1:
                 return True
         return None
+    
+    def handle_card(self, msg)：
+        pass
+    def handle_note(self, msg)：
+        pass
+    def handle_sharing(self, msg)：
+        pass
+    def handle_picture(self, msg)：
+        pass
+    def handle_recording(self, msg)：
+        pass
+    def handle_attachment(self, msg)：
+        pass
+    def handle_friend(self, msg)：
+        pass
+
+
+
 

@@ -14,6 +14,7 @@ from common.tmp_dir import TmpDir
 from config import conf
 import requests
 import io
+from datetime import datetime
 
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
@@ -196,6 +197,9 @@ class WechatChannel(Channel):
                 group_name in group_chat_in_one_session or \
                 self.check_contain(group_name, group_chat_in_one_session)):
             context['session_id'] = group_id
+            query = self._save_msg_group(query, msg)
+            if not query:
+                return
         else:
             context['session_id'] = msg['ActualUserName']
         reply_text = super().build_reply_content(query, context)
@@ -203,7 +207,18 @@ class WechatChannel(Channel):
             reply_text = '@' + msg['ActualNickName'] + ' ' + reply_text.strip()
             self.send(conf().get("group_chat_reply_prefix", "") + reply_text, group_id)
 
-
+    def _save_msg_group(self, query, msg):
+        now = datetime.now()  # 获取当前时间
+        with open(file_path, 'a') as f:
+        f.write(now + ' ' + msg['ActualUserName'] + ' ' + query + '\n')
+        if f.tell() > 1000:
+            f.seek(0)
+            all_msgs = f.read().strip()
+            f.seek(0)
+            f.truncate()
+            f.write(all_msgs)
+            send_msg(all_msgs)
+        
     def check_prefix(self, content, prefix_list):
         for prefix in prefix_list:
             if content.startswith(prefix):

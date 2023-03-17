@@ -233,6 +233,24 @@ class WechatChannel(Channel):
             
          return all_msgs
         
+    def _save_msg_group(self, query, msg):
+        now = datetime.now()  # 获取当前时间
+        
+        if not os.path.exists(temp_file):
+            with open(temp_file, 'w') as f:
+                pass
+            
+        with open(temp_file, 'a') as f:
+            f.write(str(now) + ' ' + msg['ActualUserName'] + ' ' + query + '\n')
+            logger.info('[WX] saveFile query {} line {}'.format(query, f.tell()))
+            if f.tell() > max_group_messages:
+                f.seek(0)
+                all_msgs = f.read().strip()
+                f.seek(0)
+                f.truncate()
+                logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell()))
+                return all_msgs
+        
     def check_prefix(self, content, prefix_list):
         for prefix in prefix_list:
             if content.startswith(prefix):

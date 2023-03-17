@@ -240,6 +240,7 @@ class WechatChannel(Channel):
         return None
 
 
+    
     def check_contain(self, content, keyword_list):
         if not keyword_list:
             return None

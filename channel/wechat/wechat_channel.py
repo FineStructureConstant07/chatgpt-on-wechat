@@ -213,25 +213,6 @@ class WechatChannel(Channel):
             reply_text = '@' + msg['ActualNickName'] + ' ' + reply_text.strip()
             self.send(conf().get("group_chat_reply_prefix", "") + reply_text, group_id)
 
-    def _save_msg_group(self, query, msg):
-        now = datetime.now()  # 获取当前时间
-        if not os.path.exists(temp_file):
-            with open(temp_file, 'w') as f:
-            
-        else: 
-            with open(file_path, 'a') as f:
-        
-        
-        f.write(now + ' ' + msg['ActualUserName'] + ' ' + query + '\n')
-        logger.info('[WX] saveFile query {} line {}'.format(query, f.tell))
-        if f.tell() > max_group_messages:
-            f.seek(0)
-            all_msgs = f.read().strip()
-            f.seek(0)
-            f.truncate()
-            logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell))
-            
-         return all_msgs
         
     def _save_msg_group(self, query, msg):
         now = datetime.now()  # 获取当前时间

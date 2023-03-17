@@ -16,6 +16,12 @@ import requests
 import io
 from datetime import datetime
 
+
+# Set up temporary file to store group messages
+temp_file = "group_messages.txt"
+# Define maximum number of group messages to save before sending to bot
+max_group_messages = 1000
+
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
 
@@ -209,15 +215,23 @@ class WechatChannel(Channel):
 
     def _save_msg_group(self, query, msg):
         now = datetime.now()  # 获取当前时间
-        with open(file_path, 'a') as f:
+        if not os.path.exists(temp_file):
+            with open(temp_file, 'w') as f:
+            
+        else: 
+            with open(file_path, 'a') as f:
+        
+        
         f.write(now + ' ' + msg['ActualUserName'] + ' ' + query + '\n')
-        if f.tell() > 1000:
+        logger.info('[WX] saveFile query {} line {}'.format(query, f.tell))
+        if f.tell() > max_group_messages:
             f.seek(0)
             all_msgs = f.read().strip()
             f.seek(0)
             f.truncate()
-            f.write(all_msgs)
-            send_msg(all_msgs)
+            logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell))
+            
+         return all_msgs
         
     def check_prefix(self, content, prefix_list):
         for prefix in prefix_list:

@@ -15,12 +15,13 @@ from config import conf
 import requests
 import io
 from datetime import datetime
+import os                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
 
 
 # Set up temporary file to store group messages
 temp_file = "group_messages.txt"
 # Define maximum number of group messages to save before sending to bot
-max_group_messages = 1000
+max_group_messages = 1800 
 
 thread_pool = ThreadPoolExecutor(max_workers=8)
 
@@ -73,7 +74,7 @@ class WechatChannel(Channel):
                 self._do_send_text(query, from_user_id)
 
     def handle_text(self, msg):
-        logger.debug("[WX]receive text msg: " + json.dumps(msg, ensure_ascii=False))
+        logger.debug("[WX]receive text msg 000: " + json.dumps(msg, ensure_ascii=False))
         content = msg['Text']
         self._handle_single_msg(msg, content)
 
@@ -112,9 +113,10 @@ class WechatChannel(Channel):
 
 
     def handle_group(self, msg):
-        logger.debug("[WX]receive group msg: " + json.dumps(msg, ensure_ascii=False))
+        logger.debug("[WX]receive group msg 00000: " + json.dumps(msg, ensure_ascii=False))
         group_name = msg['User'].get('NickName', None)
         group_id = msg['User'].get('UserName', None)
+        logger.debug("[WX]handle_group {}".format(group_name)) 
         if not group_name:
             return ""
         origin_content = msg['Content']
@@ -126,18 +128,22 @@ class WechatChannel(Channel):
         elif len(content_list) == 2:
             content = content_list[1]
         if "」\n- - - - - - - - - - - - - - -" in content:
-            logger.debug("[WX]reference query skipped")
+            logger.debug("[WX]reference query skipped") 
             return ""
         config = conf()
-        match_prefix = (msg['IsAt'] and not config.get("group_at_off", False)) or self.check_prefix(origin_content, config.get('group_chat_prefix')) \
+        match_prefix = (msg['IsAt'] and not config.get("group_at_off", False)) or self.check_prefix(origin_content, config.get('group_chat_prefix')) is not None \
                        or self.check_contain(origin_content, config.get('group_chat_keyword'))
+        logger.debug("[WX]handle_group match_prefix {} {} ".format(match_prefix, msg['IsAt'] )) 
+        logger.debug("[WX]handle_group match_prefix {} {} ".format(self.check_prefix(origin_content, config.get('group_chat_prefix')), origin_content)) 
+        logger.debug("[WX]handle_group match_prefix {} {} ".format((msg['IsAt'] and not config.get("group_at_off", False)), config.get("group_at_off", False))) 
         if ('ALL_GROUP' in config.get('group_name_white_list') or group_name in config.get('group_name_white_list') or self.check_contain(group_name, config.get('group_name_keyword_white_list'))) and match_prefix:
             img_match_prefix = self.check_prefix(content, conf().get('image_create_prefix'))
             if img_match_prefix:
                 content = content.split(img_match_prefix, 1)[1].strip()
-                thread_pool.submit(self._do_send_img, content, group_id)
+                # thread_pool.submit(self._do_send_img, content, group_id)
             else:
                 thread_pool.submit(self._do_send_group, content, msg)
+                logger.debug("[WX]handle_group content {}".format(content)) 
 
     def send(self, msg, receiver):
         itchat.send(msg, toUserName=receiver)
@@ -193,8 +199,9 @@ class WechatChannel(Channel):
             logger.exception(e)
 
     def _do_send_group(self, query, msg):
+        logger.info('[WX] _do_send_group query {} '.format(query))
         if not query:
-            return
+            return 
         context = dict()
         group_name = msg['User']['NickName']
         group_id = msg['User']['UserName']
@@ -204,6 +211,7 @@ class WechatChannel(Channel):
                 self.check_contain(group_name, group_chat_in_one_session)):
             context['session_id'] = group_id
             query = self._save_msg_group(query, msg)
+            logger.info('[WX] _do_send_group get query {} '.format(query))
             if not query:
                 return
         else:
@@ -211,26 +219,44 @@ class WechatChannel(Channel):
         reply_text = super().build_reply_content(query, context)
         if reply_text:
             reply_text = '@' + msg['ActualNickName'] + ' ' + reply_text.strip()
-            self.send(conf().get("group_chat_reply_prefix", "") + reply_text, group_id)
+            #self.send(conf().get("group_chat_reply_prefix", "") + reply_text, group_id)
+            itchat.send(group_name + reply_text, toUserName='filehelper')
 
         
     def _save_msg_group(self, query, msg):
-        now = datetime.now()  # 获取当前时间
-        
-        if not os.path.exists(temp_file):
-            with open(temp_file, 'w') as f:
-                pass
+        try:
+            all_msgs = ""
+            now = datetime.now()  # 获取当前时间
+            logger.info('[WX] _save_msg_group query {} '.format(query))
+
+            temp_group_file = msg['User']['NickName'] + temp_file;
+            if not os.path.exists(temp_group_file):
+                with open(temp_group_file, 'w') as f:
+                    pass
             
-        with open(temp_file, 'a') as f:
-            f.write(str(now) + ' ' + msg['ActualUserName'] + ' ' + query + '\n')
-            logger.info('[WX] saveFile query {} line {}'.format(query, f.tell()))
-            if f.tell() > max_group_messages:
-                f.seek(0)
-                all_msgs = f.read().strip()
-                f.seek(0)
-                f.truncate()
-                logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell()))
-                return all_msgs
+            with open(temp_group_file, 'a+') as f:
+                f.write('[' + now.strftime("%M:%S") + '][ ' + msg['ActualNickName'] + ']: ' + query + '\n')
+                logger.info('[WX] saveFile query {} line {}'.format(query, f.tell()))
+                if f.tell() > max_group_messages:
+                    f.seek(0)
+                    all_msgs = f.read().strip()
+                    f.seek(0)
+                    f.truncate()
+                    logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell()))
+                     
+                    all_msgs = "请问，我有一些聊天记录，格式是  [时间] [昵称]：内容 。 \n 你能帮我总结一下主要话题吗？ 请给出综述，谢谢 \n 之后请分别归类主要话题，同时统计出涉及某个话题的记录个数，给出这个话题的总结综述，和重点汇总摘要。 \n 需要特别字体显示 关于 新冠，流感，疫情，防护，购买 的话题 ，以及别的你���为重要的别的话题。  \n 在回答的最后请帮忙统计总的记录个数，和本次对话消耗的Token个数。 \n 谢谢  \n 如下是记录： \n "  + all_msgs 
+                    return all_msgs
+            
+
+            logger.info('[WX] _save_msg_group file query list {} '.format(f))                                
+    
+
+
+
+
+
+        except Exception as e:
+            logger.exception(e)
         
     def check_prefix(self, content, prefix_list):
         for prefix in prefix_list:
@@ -247,4 +273,4 @@ class WechatChannel(Channel):
             if content.find(ky) != -1:
                 return True
         return None
-
+    

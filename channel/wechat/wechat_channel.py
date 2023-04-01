@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from common.log import logger
 from common.tmp_dir import TmpDir
 from config import conf
+from common import text
 import requests
 import io
 from datetime import datetime
@@ -237,8 +238,9 @@ class WechatChannel(Channel):
                     pass
             
             with open(temp_group_file, 'a+') as f:
-                f.write('[' + now.strftime("%M:%S") + '][ ' + msg['ActualNickName'] + ']: ' + query + '\n')
-                logger.info('[WX] saveFile query {} line {}'.format(query, f.tell()))
+                text = textClaiming('[' + now.strftime("%M") + '][ ' + msg['ActualNickName'] + ']: ' + query)
+                f.write(text + '\n')
+                logger.info('[WX] saveFile query {} line {}'.format(text, f.tell()))
                 if f.tell() > max_group_messages:
                     f.seek(0)
                     all_msgs = f.read().strip()

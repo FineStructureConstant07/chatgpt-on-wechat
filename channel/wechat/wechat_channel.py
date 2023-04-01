@@ -107,9 +107,9 @@ class WechatChannel(Channel):
             img_match_prefix = self.check_prefix(content, conf().get('image_create_prefix'))
             if img_match_prefix:
                 content = content.split(img_match_prefix, 1)[1].strip()
-                thread_pool.submit(self._do_send_img, content, to_user_id)
+                """thread_pool.submit(self._do_send_img, content, to_user_id)
             else:
-                thread_pool.submit(self._do_send_text, content, to_user_id)
+                thread_pool.submit(self._do_send_text, content, to_user_id)"""
 
 
     def handle_group(self, msg):
@@ -210,6 +210,8 @@ class WechatChannel(Channel):
                 group_name in group_chat_in_one_session or \
                 self.check_contain(group_name, group_chat_in_one_session)):
             context['session_id'] = group_id
+            query = '#清除记忆'
+            reply_text = super().build_reply_content(query, context)
             query = self._save_msg_group(query, msg)
             logger.info('[WX] _do_send_group get query {} '.format(query))
             if not query:
@@ -244,7 +246,7 @@ class WechatChannel(Channel):
                     f.truncate()
                     logger.info('[WX] getFile query {} line {}'.format(all_msgs, f.tell()))
                      
-                    all_msgs = "请问，我有一些聊天记录，格式是  [时间] [昵称]：内容 。 \n 你能帮我总结一下主要话题吗？ 请给出综述，谢谢 \n 之后请分别归类主要话题，同时统计出涉及某个话题的记录个数，给出这个话题的总结综述，和重点汇总摘要。 \n 需要特别字体显示 关于 新冠，流感，疫情，防护，购买 的话题 ，以及别的你���为重要的别的话题。  \n 在回答的最后请帮忙统计总的记录个数，和本次对话消耗的Token个数。 \n 谢谢  \n 如下是记录： \n "  + all_msgs 
+                    all_msgs = "请问,聊天记录格式是  "[时间] [昵称]: 内容" . \n 你能给出帮总结综述么,谢谢 \n 之后请分类归纳话题,给出该分类话题的记录个数,给出这个分类的概述,或重点摘要. \n 需要注意 关于 新冠,流感,疫情,防护,购买 的话题 ,以及别的重要的话题.  \n 在回答的最后统计总的聊天个数,和对话Token个数。 \n 谢谢  \n 如下是记录： \n "  + all_msgs 
                     return all_msgs
             
 
